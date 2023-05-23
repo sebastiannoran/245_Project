@@ -1,11 +1,11 @@
 import pandas as pd
-import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sklearn.metrics import mean_squared_error
 import xgboost as xgb
+from sklearn.model_selection import TimeSeriesSplit
 
-df = pd.read_csv('PJME_hourly.csv')
+df = pd.read_csv('EKPC_hourly.csv')
 df = df.set_index('Datetime')
 df.index = pd.to_datetime(df.index)
 color_pal = sns.color_palette()
@@ -15,24 +15,19 @@ if __name__ == '__main__':
     df.plot(style='.',
             figsize=(15, 5),
             color=color_pal[1],
-            title='PJME Energy Use in MW')
-    #train test and split portion
-    #Any data from 2002-2015 (exlusive) will be used as our training data
-    train = df.loc[df.index < '01-01-2015']
-    test = df.loc[df.index >= '01-01-2015']
+            title='Eastern Kentucky Energy Use in MW')
+
+    train = df.loc[df.index < '01-01-2017']
+    test = df.loc[df.index >= '01-01-2017']
     fig, ax = plt.subplots(figsize=(15, 5))
     train.plot(ax=ax, label='Training Data', title='Data Train/Test Split')
     test.plot(ax=ax, label='Testing Data')
     ax.axvline('01-01-2015', color='black', ls='--')
     ax.legend(['Training Data', 'Test Data'])
 
-    df.loc[(df.index > '01-01-2010') & (df.index < '01-08-2010')] \
-        .plot(figsize=(15, 5), title='Week Of Data')
 
     def create_features(df):
-        """
-        Create time series features based on time series index.
-        """
+
         df = df.copy()
         df['hour'] = df.index.hour
         df['dayofweek'] = df.index.dayofweek
@@ -45,11 +40,14 @@ if __name__ == '__main__':
         return df
         df = create_features(df)
 
+        df = create_features(df)
+
+    
     train = create_features(train)
     test = create_features(test)
 
     FEATURES = ['dayofyear', 'hour', 'dayofweek', 'quarter', 'month', 'year']
-    TARGET = 'PJME_MW'
+    TARGET = 'EKPC_MW'
 
     X_train = train[FEATURES]
     y_train = train[TARGET]
@@ -63,13 +61,7 @@ if __name__ == '__main__':
                            objective='reg:linear',
                            max_depth=3,
                            learning_rate=0.01)
-    """
-        Retrieve the validation scores for the test and train data
-        Use the RSME to represent validation score
-        The lower the score, the better
-        Include a verbose score of 100 to print out a training and validation
-        score for every 100 trees that are built
-    """
+
     reg.fit(X_train, y_train,
             eval_set=[(X_train, y_train), (X_test, y_test)],
             verbose=100)
@@ -81,8 +73,8 @@ if __name__ == '__main__':
 
     test['prediction'] = reg.predict(X_test)
     df = df.merge(test[['prediction']], how='left', left_index=True, right_index=True)
-    ax = df[['PJME_MW']].plot(figsize=(15, 5))
+    ax = df[['EKPC_MW']].plot(figsize=(15, 5))
     df['prediction'].plot(ax=ax, style='.')
     plt.legend(['Truth Data', 'Predictions'])
-    ax.set_title('Raw Dat and Prediction')
+    ax.set_title('Raw Data and Prediction')
     plt.show()
