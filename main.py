@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import numpy as np
 from sklearn.metrics import mean_squared_error
 import xgboost as xgb
 from sklearn.model_selection import TimeSeriesSplit
@@ -78,3 +79,13 @@ if __name__ == '__main__':
     plt.legend(['Truth Data', 'Predictions'])
     ax.set_title('Raw Data and Prediction')
     plt.show()
+
+    ax = df.loc[(df.index > '04-01-2018') & (df.index < '04-08-2018')]['EKPC_MW'] \
+        .plot(figsize=(15, 5), title='Week Of Data')
+    df.loc[(df.index > '04-01-2018') & (df.index < '04-08-2018')]['prediction'] \
+        .plot(style='.')
+    plt.legend(['Truth Data', 'Prediction'])
+    plt.show()
+
+    score = np.sqrt(mean_squared_error(test['EKPC_MW'], test['prediction']))
+    print(f'RMSE Score on Test set: {score:0.2f}')
